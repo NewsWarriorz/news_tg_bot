@@ -1,6 +1,10 @@
 // LOGGING STARTS
 const logdnaWinston = require('logdna-winston');
 const winston = require('winston');
+const { Client } = require('@elastic/elasticsearch')
+const express = require('express');
+const Telegraf = require('telegraf')
+const rateLimit = require('telegraf-ratelimit')
 
 const logger = winston.createLogger({
     level: 'debug',
@@ -10,29 +14,33 @@ const logger = winston.createLogger({
 });
 
 
-// if (process.env.NODE_ENV == 'production') {
-//     const logdnaOptions = {
-//         key: process.env.LOGDNA_API_KEY,
-//         hostname: "news-tg",
-//         // ip: ipAddress,
-//         // mac: macAddress,
-//         app: "news-tg-bot",
-//         // env: envName,
-//         level: "debug", // Uses Winston log levels: https://github.com/winstonjs/winston#logging-levels
-//         handleExceptions: true
-//     };
+const { NODE_ENV } = process.env;
 
-//     logger.add(new logdnaWinston(logdnaOptions));
-// }
+if (NODE_ENV !== "production") require("dotenv").config();
 
+const { BOT_TOKEN, PORT, APP_URL, ELASTIC_HOST, ELASTIC_PASSWORD, ELASTIC_USER } = process.env;
+
+if (!BOT_TOKEN || !ELASTIC_PASSWORD || !ELASTIC_HOST || !APP_URL)
+    throw new Error("Environment variables can't be null");
+
+const expressApp = express();
+const bot = new Telegraf(BOT_TOKEN)
+
+bot.use(
+    rateLimit({
+        window: 2000,
+        limit: 1,
+        onLimitExceeded: (ctx) =>
+            ctx.reply("Rate limit exceeded, bot is on beta testing. Try again after 2 sec."),
+    })
+);
 
 
 // ELASTIC
-const { Client } = require('@elastic/elasticsearch')
 const client = new Client({
     node: process.env.ELASTIC_HOST,
     auth: {
-        username: process.env.ELASTIC_USER,
+        username: process.env.ELASTIC_USER || "elastic",
         password: process.env.ELASTIC_PASSWORD
     }
 })
@@ -41,40 +49,15 @@ logger.info(`Sucessfully connected to elasticsearch host ${process.env.ELASTIC_H
 
 
 // BOT LOGIC
-const express = require('express');
-const Telegraf = require('telegraf')
-const Markup = require('telegraf/markup')
-const rateLimit = require('telegraf-ratelimit')
-
-// Set limit to 1 message per 3 seconds
-const limitConfig = {
-    window: 3000,
-    limit: 1,
-    onLimitExceeded: (ctx, next) => ctx.reply('Rate limit exceeded, bot is on beta testing. Try again after 3 sec.')
-}
-
-// init bot
-const PORT = process.env.PORT || 3000;
-const BOT_TOKEN = process.env.BOT_TOKEN;
-const APP_URL = process.env.APP_URL || 'https://newstgbot.herokuapp.com/';
-
-const expressApp = express();
-const bot = new Telegraf(BOT_TOKEN)
-bot.telegram.setWebhook(`${APP_URL}/bot${BOT_TOKEN}`);
-// bot.startWebhook(`/bot${BOT_TOKEN}`, null, PORT)
-bot.use(rateLimit(limitConfig))
-
 //error handling
 bot.catch((err, ctx) => {
     logger.error(`Error for ${ctx.updateType}`, ctx, err)
 })
 
-
 const replyWithError = (ctx, error) =>
     ctx.replyWithMarkdown(
         `ERROR: ${error}\nPlease try again.`
     );
-
 
 bot.start((ctx) => {
     msg =
@@ -118,15 +101,29 @@ bot.on('text', async (ctx) => {
             body.hits.hits.slice(0, 3).forEach((hits, i) =>
                 msg += `${i + 1}. ${hits._source.url} \n\n`
             );
-            return ctx.reply(msg)
+            return ctx.reply(msg, { disable_web_page_preview: true })
         }
     }
 })
 
 // bot.launch()
-expressApp.get('/', (req, res) => {
+// expressApp.get('/', (req, res) => {
+//     res.send('NewzWarriors Telegram Bot https://t.me/NewsWarriorbot');
+// });
+// expressApp.listen(PORT, () => {
+//     console.log(`Server running on port ${PORT}`);
+// });
+
+if (NODE_ENV !== "production") {
+    console.info("Development environment");
+    bot.startPolling();
+} else {
+    console.info("Production environment");
+    bot.telegram.setWebhook(`${APP_URL}/bot${BOT_TOKEN}`);
+    expressApp.use(bot.webhookCallback(`/bot${BOT_TOKEN}`));
+}
+
+expressApp.get("/", (req, res) => {
     res.send('NewzWarriors Telegram Bot https://t.me/NewsWarriorbot');
 });
-expressApp.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+expressApp.listen(PORT, () => console.info(`Server running on ${PORT}`));
