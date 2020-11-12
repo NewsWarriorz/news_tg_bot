@@ -97,7 +97,7 @@ bot.on('text', async (ctx) => {
 
             if (body.hits.hits.length == 0) return ctx.reply("❌ No credible news source found.")
 
-            let msg = ` Results for '${text.slice(0, 10)} ...'\n\n`
+            let msg = ` Results for '${text.slice(0, 50)} ...'\n\n`
             body.hits.hits.slice(0, 3).forEach((hits, i) =>
                 msg += `${i + 1}. ${hits._source.url} \n\n`
             );
