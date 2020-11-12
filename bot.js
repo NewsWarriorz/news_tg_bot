@@ -52,7 +52,13 @@ const limitConfig = {
 }
 
 // init bot
-const bot = new Telegraf(process.env.BOT_TOKEN)
+const PORT = process.env.PORT || 3000;
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const APP_URL = process.env.APP_URL || 'https://newstgbot.herokuapp.com/';
+
+const bot = new Telegraf(BOT_TOKEN)
+bot.telegram.setWebhook(`${APP_URL}/bot${API_TOKEN}`);
+bot.startWebhook(`/bot${BOT_TOKEN}`, null, PORT)
 bot.use(rateLimit(limitConfig))
 
 //error handling
