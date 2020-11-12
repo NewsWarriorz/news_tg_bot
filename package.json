@@ -23,6 +23,7 @@
   "homepage": "https://github.com/NewsWarriorz/news_tg_bot#readme",
   "dependencies": {
     "@elastic/elasticsearch": "^7.10.0",
+    "express": "^4.17.1",
     "logdna-winston": "^3.0.2",
     "telegraf": "^3.38.0",
     "telegraf-ratelimit": "^2.0.0",

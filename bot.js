@@ -41,6 +41,7 @@ logger.info(`Sucessfully connected to elasticsearch host ${process.env.ELASTIC_H
 
 
 // BOT LOGIC
+const express = require('express');
 const Telegraf = require('telegraf')
 const Markup = require('telegraf/markup')
 const rateLimit = require('telegraf-ratelimit')
@@ -57,9 +58,10 @@ const PORT = process.env.PORT || 3000;
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const APP_URL = process.env.APP_URL || 'https://newstgbot.herokuapp.com/';
 
+const expressApp = express();
 const bot = new Telegraf(BOT_TOKEN)
 bot.telegram.setWebhook(`${APP_URL}/bot${BOT_TOKEN}`);
-bot.startWebhook(`/bot${BOT_TOKEN}`, null, PORT)
+// bot.startWebhook(`/bot${BOT_TOKEN}`, null, PORT)
 bot.use(rateLimit(limitConfig))
 
 //error handling
@@ -76,11 +78,11 @@ const replyWithError = (ctx, error) =>
 
 bot.start((ctx) => {
     msg =
-    `Hi <b>${ctx.message.from.first_name}</b>,\n` +
-    "Welcome to <b>NewsVerification Bot</b>\n" +
-    "<i>We</i> are delighted to have you\n\n" +
-    "<pre>How Does this Work?</pre>\n" +
-    "<pre>Just start typing about things you want to find out and we will try to verify it from our database\nFYI: More words we have better the result will be\nTry Now!!!</pre>";
+        `Hi <b>${ctx.message.from.first_name}</b>,\n` +
+        "Welcome to <b>NewsVerification Bot</b>\n" +
+        "<i>We</i> are delighted to have you\n\n" +
+        "<pre>How Does this Work?</pre>\n" +
+        "<pre>Just start typing about things you want to find out and we will try to verify it from our database\nFYI: More words we have better the result will be\nTry Now!!!</pre>";
     return ctx.reply(
         msg,
         {
@@ -95,7 +97,7 @@ bot.on('text', async (ctx) => {
         const { text } = message;
         if (text) {
             wordsLength = text.split(" ").length
-            if (!(8 <= wordsLength  && wordsLength <= 5000)) {
+            if (!(8 <= wordsLength && wordsLength <= 5000)) {
                 return replyWithError(ctx, "Search query should be between 8 to 5000 words.")
             }
             // search with elastic
@@ -122,3 +124,9 @@ bot.on('text', async (ctx) => {
 })
 
 // bot.launch()
+expressApp.get('/', (req, res) => {
+    res.send('NewzWarriors Telegram Bot https://t.me/NewsWarriorbot');
+});
+expressApp.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
