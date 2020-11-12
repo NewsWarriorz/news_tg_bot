@@ -89,7 +89,7 @@ bot.on('text', async (ctx) => {
                 body: {
                     query: {
                         match: {
-                            content: text
+                            title: text
                         }
                     }
                 }
