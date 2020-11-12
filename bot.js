@@ -10,20 +10,20 @@ const logger = winston.createLogger({
 });
 
 
-if (process.env.NODE_ENV == 'production') {
-    const logdnaOptions = {
-        key: process.env.LOGDNA_API_KEY,
-        hostname: "news-tg",
-        // ip: ipAddress,
-        // mac: macAddress,
-        app: "news-tg-bot",
-        // env: envName,
-        level: "debug", // Uses Winston log levels: https://github.com/winstonjs/winston#logging-levels
-        handleExceptions: true
-    };
+// if (process.env.NODE_ENV == 'production') {
+//     const logdnaOptions = {
+//         key: process.env.LOGDNA_API_KEY,
+//         hostname: "news-tg",
+//         // ip: ipAddress,
+//         // mac: macAddress,
+//         app: "news-tg-bot",
+//         // env: envName,
+//         level: "debug", // Uses Winston log levels: https://github.com/winstonjs/winston#logging-levels
+//         handleExceptions: true
+//     };
 
-    logger.add(new logdnaWinston(logdnaOptions));
-}
+//     logger.add(new logdnaWinston(logdnaOptions));
+// }
 
 
 
@@ -36,6 +36,7 @@ const client = new Client({
         password: process.env.ELASTIC_PASSWORD
     }
 })
+logger.info(`Sucessfully connected to elasticsearch host ${process.env.ELASTIC_HOST}`)
 
 
 
@@ -120,4 +121,4 @@ bot.on('text', async (ctx) => {
     }
 })
 
-bot.launch()
+// bot.launch()
